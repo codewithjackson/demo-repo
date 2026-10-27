@@ -36,18 +36,42 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (reqUrl.pathname === '/debug') {
+  if (reqUrl.pathname === '/debug-curl') {
+    const { exec } = require('child_process');
     const testUrl = reqUrl.searchParams.get('url') || 'https://api.ipify.org?format=json';
+    const ref = reqUrl.searchParams.get('ref') || 'https://moviebox.ph/';
+    exec(`curl -s -I -H "Referer: ${ref}" -H "User-Agent: okhttp/4.12.0" "${testUrl}"`, (err, stdout, stderr) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ stdout, stderr, err: err ? err.message : null }, null, 2));
+    });
+    return;
+  }
+
+  if (reqUrl.pathname === '/debug') {
+    const { exec } = require('child_process');
+    const testUrl = reqUrl.searchParams.get('url') || 'https://api.ipify.org?format=json';
+    const ref = reqUrl.searchParams.get('ref') || 'https://moviebox.ph/';
+    exec(`curl -s -I -H "Referer: ${ref}" -H "User-Agent: okhttp/4.12.0" "${testUrl}"`, (err, stdout, stderr) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ stdout, stderr, err: err ? err.message : null }, null, 2));
+    });
+    return;
+  }
+    const testUrl = reqUrl.searchParams.get('url') || 'https://api.ipify.org?format=json';
+    const customUa = reqUrl.searchParams.get('ua') || 'okhttp/4.12.0';
+    const customRef = reqUrl.searchParams.get('ref') || 'https://moviebox.ph/';
     try {
       const u = new URL(testUrl);
       const mod = u.protocol === 'http:' ? http : https;
-      const proxyReq = mod.get(testUrl, {
-        headers: {
-          'User-Agent': 'okhttp/4.12.0',
-          'Referer': 'https://moviebox.ph/',
-          'Origin': 'https://moviebox.ph/'
-        }
-      }, (proxyRes) => {
+      const headers = {
+        'User-Agent': customUa,
+        'Referer': customRef,
+        'Accept': '*/*'
+      };
+      if (reqUrl.searchParams.get('range')) {
+        headers['Range'] = reqUrl.searchParams.get('range');
+      }
+      const proxyReq = mod.get(testUrl, { headers }, (proxyRes) => {
         let body = '';
         proxyRes.on('data', c => { if (body.length < 2000) body += c.toString('utf8'); });
         proxyRes.on('end', () => {

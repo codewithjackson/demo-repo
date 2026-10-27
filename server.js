@@ -36,6 +36,42 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (reqUrl.pathname === '/debug') {
+    const testUrl = reqUrl.searchParams.get('url') || 'https://api.ipify.org?format=json';
+    try {
+      const u = new URL(testUrl);
+      const mod = u.protocol === 'http:' ? http : https;
+      const proxyReq = mod.get(testUrl, {
+        headers: {
+          'User-Agent': 'okhttp/4.12.0',
+          'Referer': 'https://moviebox.ph/',
+          'Origin': 'https://moviebox.ph/'
+        }
+      }, (proxyRes) => {
+        let body = '';
+        proxyRes.on('data', c => { if (body.length < 2000) body += c.toString('utf8'); });
+        proxyRes.on('end', () => {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            target: testUrl,
+            status: proxyRes.statusCode,
+            statusMessage: proxyRes.statusMessage,
+            headers: proxyRes.headers,
+            body: body.slice(0, 500)
+          }, null, 2));
+        });
+      });
+      proxyReq.on('error', err => {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      });
+    } catch (e) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
   const isStream = reqUrl.pathname.startsWith('/api/stream');
   const isDownload = reqUrl.pathname.startsWith('/api/download');
 

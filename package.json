@@ -1,0 +1,12 @@
+{
+  "name": "streamixx-media-proxy",
+  "version": "1.0.0",
+  "description": "Streamixx media streaming and download proxy",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
